@@ -7,6 +7,7 @@ import jnr.ffi.Pointer;
 import jnr.ffi.types.mode_t;
 import jnr.ffi.types.off_t;
 import jnr.ffi.types.size_t;
+import ru.serce.jnrfuse.examples.MemoryFS;
 import ru.serce.jnrfuse.struct.FileStat;
 import ru.serce.jnrfuse.struct.FuseFileInfo;
 import ru.serce.jnrfuse.struct.Statvfs;
@@ -44,6 +45,9 @@ public class EchoFS extends FuseStubFS {
         protected MemoryPath find(String path) {
             if (super.find(path) != null) {
                 return super.find(path);
+            }
+            if (path.startsWith(mount_path)) {
+                path = path.substring(mount_path.length());
             }
             while (path.startsWith("/")) {
                 path = path.substring(1);
@@ -203,6 +207,13 @@ public class EchoFS extends FuseStubFS {
 
     private String mount_path;
 
+    private String getAbsolutePath(String path) {
+        if (!(path.startsWith(mount_path))) {
+            path = mount_path.concat(path);
+        }
+        return path;
+    }
+
     public static void main(String[] args) {
         EchoFS memfs = new EchoFS();
         try {
@@ -212,7 +223,7 @@ public class EchoFS extends FuseStubFS {
                     path = "J:\\";
                     break;
                 default:
-                    path = "/tmp/mntm";
+                    path = "/tmp/echofs";
             }
             memfs.mount_path = path;
             memfs.mount(Paths.get(path), true, true);
@@ -252,7 +263,9 @@ public class EchoFS extends FuseStubFS {
 
     @Override
     public int getattr(String path, FileStat stat) {
-        MemoryPath p = getPath(path);
+        path = getAbsolutePath(path);
+        System.out.println("getattr, " + path + ", " + "(stat)");
+        EchoFS.MemoryPath p = getPath(path);
         if (p != null) {
             p.getattr(stat);
             return 0;
@@ -281,6 +294,8 @@ public class EchoFS extends FuseStubFS {
 
     @Override
     public int mkdir(String path, @mode_t long mode) {
+        path = getAbsolutePath(path);
+        System.out.println("mkdir, " + path + ", " + ((Long) mode).toString());
         if (getPath(path) != null) {
             return -ErrorCodes.EEXIST();
         }
@@ -295,6 +310,9 @@ public class EchoFS extends FuseStubFS {
 
     @Override
     public int read(String path, Pointer buf, @size_t long size, @off_t long offset, FuseFileInfo fi) {
+        path = getAbsolutePath(path);
+        System.out.println("read, " + path + ", " + buf.toString() + ", " + ((Long) size).toString() + ", " + ((Long) offset).toString() + fi.fh.toString());
+
         MemoryPath p = getPath(path);
         if (p == null) {
             return -ErrorCodes.ENOENT();
@@ -303,13 +321,13 @@ public class EchoFS extends FuseStubFS {
         if (!(path.startsWith(mount_path))) {
             path = mount_path.concat(path);
         }
-        System.out.println("READ, " + path + ", " + buf.toString() + ", " + ((Long) size).toString() + ", " + ((Long) offset).toString() + ((Long) fi.fh.longValue()).toString());
-
         return 0;
     }
 
     @Override
     public int readdir(String path, Pointer buf, FuseFillDir filter, @off_t long offset, FuseFileInfo fi) {
+        path = getAbsolutePath(path);
+        System.out.println("readdir, " + path + ", " + buf.toString() + ", (filter), " + ((Long) offset).toString() + fi.fh.toString());
         MemoryPath p = getPath(path);
         if (p == null) {
             return -ErrorCodes.ENOENT();
@@ -326,6 +344,8 @@ public class EchoFS extends FuseStubFS {
 
     @Override
     public int statfs(String path, Statvfs stbuf) {
+        path = getAbsolutePath(path);
+        System.out.println("statfs, " + path + ", (stbuf)");
         if (Platform.getNativePlatform().getOS() == WINDOWS) {
             // statfs needs to be implemented on Windows in order to allow for copying
             // data from other devices because winfsp calculates the volume size based
@@ -342,6 +362,8 @@ public class EchoFS extends FuseStubFS {
 
     @Override
     public int rename(String path, String newName) {
+        path = getAbsolutePath(path);
+        System.out.println("rename, " + path + ", " + newName);
         MemoryPath p = getPath(path);
         if (p == null) {
             return -ErrorCodes.ENOENT();
@@ -360,7 +382,23 @@ public class EchoFS extends FuseStubFS {
     }
 
     @Override
+    public int release(String path, FuseFileInfo fi) {
+        path = getAbsolutePath(path);
+        System.out.println("release, " + path + ", " + fi.fh.toString());
+        return 0;
+    }
+
+    @Override
+    public int releasedir(String path, FuseFileInfo fi) {
+        path = getAbsolutePath(path);
+        System.out.println("releasedir, " + path + ", " + fi.fh.toString());
+        return 0;
+    }
+
+    @Override
     public int rmdir(String path) {
+        path = getAbsolutePath(path);
+        System.out.println("rmdir, " + path);
         MemoryPath p = getPath(path);
         if (p == null) {
             return -ErrorCodes.ENOENT();
@@ -374,6 +412,8 @@ public class EchoFS extends FuseStubFS {
 
     @Override
     public int truncate(String path, long offset) {
+        path = getAbsolutePath(path);
+        System.out.println("truncate, " + path + ((Long) offset).toString());
         MemoryPath p = getPath(path);
         if (p == null) {
             return -ErrorCodes.ENOENT();
@@ -387,6 +427,8 @@ public class EchoFS extends FuseStubFS {
 
     @Override
     public int unlink(String path) {
+        path = getAbsolutePath(path);
+        System.out.println("unlink, " + path);
         MemoryPath p = getPath(path);
         if (p == null) {
             return -ErrorCodes.ENOENT();
@@ -397,11 +439,15 @@ public class EchoFS extends FuseStubFS {
 
     @Override
     public int open(String path, FuseFileInfo fi) {
+        path = getAbsolutePath(path);
+        System.out.println("open, " + path + ", " + ((Long) (fi.fh.longValue())).toString());
         return 0;
     }
 
     @Override
     public int write(String path, Pointer buf, @size_t long size, @off_t long offset, FuseFileInfo fi) {
+        path = getAbsolutePath(path);
+        System.out.println("write, " + path + ", " + buf.toString() + ", " + ((Long) size).toString() + ", " + ((Long) offset).toString() + fi.fh.toString());
         MemoryPath p = getPath(path);
         if (p == null) {
             return -ErrorCodes.ENOENT();
@@ -410,5 +456,12 @@ public class EchoFS extends FuseStubFS {
             return -ErrorCodes.EISDIR();
         }
         return ((MemoryFile) p).write(buf, size, offset);
+    }
+
+    @Override
+    public int access(String path, int mask) {
+        path = getAbsolutePath(path);
+        System.out.println("access, " + path + ", " + ((Integer) mask).toString());
+        return 0;
     }
 }
