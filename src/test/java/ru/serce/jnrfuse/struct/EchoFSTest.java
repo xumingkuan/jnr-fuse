@@ -23,8 +23,8 @@ public class EchoFSTest extends BaseFsTest {
         String s;
         try {
             Runtime r = Runtime.getRuntime();
-            String command = "cd " + tmpDir.toString() + "; cat a.txt";
-            //String command = "ls " + tmpDir.toAbsolutePath().toString();// + "/Directory with files\"";
+            //String command = "cd " + tmpDir.toString() + "; cat a.txt";
+            String command = "ls " + tmpDir.toAbsolutePath().toString();// + "/Directory with files\"";
             System.out.println(command);
             Process p = r.exec(command);
             BufferedReader br = new BufferedReader(
