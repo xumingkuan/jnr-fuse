@@ -1,3 +1,6 @@
+# Note for project 3
+See report at [report.md](report.md) and code at [EchoFS.java](https://github.com/xumingkuan/jnr-fuse/blob/master/src/main/java/ru/serce/jnrfuse/EchoFS.java).
+
 jnr-fuse
 ==
 [![Build Status](https://travis-ci.org/SerCeMan/jnr-fuse.svg?branch=master)](https://travis-ci.org/SerCeMan/jnr-fuse)  [ ![Download](https://api.bintray.com/packages/serce/maven/jnr-fuse/images/download.svg) ](https://bintray.com/serce/maven/jnr-fuse/_latestVersion)  [![Join the chat at https://gitter.im/SerCeMan/jnr-fuse](https://badges.gitter.im/SerCeMan/jnr-fuse.svg)](https://gitter.im/SerCeMan/jnr-fuse?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
